@@ -9,39 +9,25 @@
     <canvas id="editor"></canvas>
     <div class="right-panel">
         <div id="info">
-            <span id="coord"> (x, y) </span> <span id="tile"> tile </span>
-            <div id="current"></div>
-        </div>
-        <div id="pallete">
-            <div id="brush" class="color">BRUSH</div>
-            <div id="pallete-current">
-                <div id="background" class="color selectable" data-pallete="background"> BKG </div>
-                <div id="color1" class="color selectable" data-pallete="color1"> CL1 </div>
-                <div id="color2" class="color selectable" data-pallete="color2"> CL2 </div>
-                <div id="color3" class="color selectable" data-pallete="color3"> CL3 </div>
+            <span id="coord"> Pixel (0, 0) </span> <span id="tile"> Tile $00 </span>
+            <div id="current">
+                <input id="palette-input" value="$0F,$16,$27,$18" placeholder="$0F,$16,$27,$18" type="text" maxlength="15"/>
             </div>
-            
+        </div>
+        <div id="palette">
+            <div id="palette-current">
+                <div id="background" class="color selectable" data-palette="background" data-selected> BKG </div>
+                <div id="color1" class="color selectable" data-palette="color1"> CL1 </div>
+                <div id="color2" class="color selectable" data-palette="color2"> CL2 </div>
+                <div id="color3" class="color selectable" data-palette="color3"> CL3 </div>
+            </div>
 
             <table border="1" cellpadding="5">
-            <tbody class="pallete-selection" class="selectable">
+            <tbody class="palette-selection" class="selectable">
                 <tr>
-                <td>NES Colors</a></td>
-                <td>0</td>
-                <td>1</td>
-                <td>2</td>
-                <td>3</td>
-                <td>4</td>
-                <td>5</td>
-                <td>6</td>
-                <td>7</td>
-                <td>8</td>
-                <td>9</td>
-                <td>A</td>
-                <td>B</td>
-                <td>C</td>
-                <td>D</td>
-                <td>E</td>
-                <td>F</td>
+                    <th>NES Colors</th>
+                    <td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td>
+                    <td>8</td><td>9</td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td>
                 </tr>
                 <tr>
                 <td>$0</td>
@@ -122,22 +108,18 @@
                 </tbody>
             </table>
         </div>
-        <input id="grid" type="checkbox" checked="checked">Show grid lines</input>
         <hr>
-        
-      
-
-        <label for="nesfile">Upload</label>
+        <label for="nesfile">Upload <code>.chr</code> file: </label>
         <input type="file" id="nesfile" name="nesfile" />
         <br>
-
-        <label for="nesfilename">NES Sprite Name</label>
-        <input  id="nesfilename" type="text" />
-        <button id="nes">Save NES</button>
-        <br>
-        
-        <button id="image">Save PNG</button>
-        <button id="new">New sprite sheet</button>
+        <label>Or</label>
+        <button id="new">Create new sprite sheet</button>
+        <hr>
+        <input id="grid" type="checkbox" checked="checked">Show grid lines</input><br/>
+        <label for="nesfilename">Save file as</label>
+        <input  id="nesfilename" type="text" placeholder="file name" />
+        <button id="nes">.chr</button>
+        <button id="image">.png</button>
         <hr>
         <pre>
             $3F00	Universal background color
@@ -148,8 +130,7 @@
             $3F11-$3F13	Sprite palette 0
             $3F15-$3F17	Sprite palette 1
             $3F19-$3F1B	Sprite palette 2
-            $3F1D-$3F1F	Sprite palette 3
-        </pre>
+            $3F1D-$3F1F	Sprite palette 3</pre>
     </div>
     <script src="main.js"></script>
 </body>

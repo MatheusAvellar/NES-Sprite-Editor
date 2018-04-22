@@ -1,5 +1,5 @@
 // Canvas bootstrapping
-var canvas = document.getElementById('editor');
+var canvas = document.getElementById("editor");
 var spriteRomData = null;
 
 var scale = 10;
@@ -9,18 +9,18 @@ var height = 256;
 canvas.width = width * scale;
 canvas.height = height * scale;
 
-var ctx = canvas.getContext('2d');
+var ctx = canvas.getContext("2d");
 ctx.imageSmoothingEnabled = false;
 
 document.body.appendChild(canvas);
 
-ctx.fillStyle = 'gray';
+ctx.fillStyle = "gray";
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-var spriteCanvas = document.createElement('canvas');
+var spriteCanvas = document.createElement("canvas");
 spriteCanvas.width = width;
 spriteCanvas.height = height;
-var spriteCtx = spriteCanvas.getContext('2d');
+var spriteCtx = spriteCanvas.getContext("2d");
 spriteCtx.imageSmoothingEnabled = false;
 
 var imageData = ctx.getImageData(0, 0, spriteCanvas.width, spriteCanvas.height);
@@ -28,28 +28,28 @@ var data = imageData.data;
 
 // Editor data
 
-var mapping = ['background', 'color1', 'color2', 'color3']
+var mapping = ["background", "color1", "color2", "color3"]
 
-var pallete = {
+var palette = {
     background: { // rgb(0,0,0)
         r: 0, g: 0, b: 0,
-        nes: '0x0F'
+        nes: "0x0F"
     },
     color1: { // rgb(248,56,0)
         r: 248, g: 56, b: 0,
-        nes: '0x16'
+        nes: "0x16"
     },
     color2: { // rgb(252,160,68)
         r: 252, g: 160, b: 68,
-        nes: '0x27'
+        nes: "0x27"
     },
     color3: { //rgb(172,124,0)
         r: 172, g: 124, b: 0,
-        nes: '0x18'
+        nes: "0x18"
     }
 }
 
-var selectedPallete = 'background';
+var selectedPalette = "background";
 var selectedColor = null;
 var selectedNes = null;
 
@@ -60,89 +60,101 @@ function toggleGrid(evt) {
     paintCanvas();
 }
 
-document.getElementById('grid').addEventListener('change', toggleGrid);
+document.getElementById("grid").onchange = toggleGrid;
 
-var downloadNes = document.getElementById('nes')
-downloadNes.addEventListener('click', function() {
-    var name = document.getElementById('nesfilename').value;
+document.getElementById("nes").onclick = function() {
+    var name = document.getElementById("nesfilename").value || "sprite";
     spriteRomData = canvasToNES(imageData);
-    download(name || 'sprite.chr', spriteRomData, 'octect/stream');
-});
+    download(name + ".chr", spriteRomData, "octect/stream");
+};
 
-var uploadNes = document.getElementById('nesfile')
-uploadNes.addEventListener('change', function() {
+var uploadNes = document.getElementById("nesfile")
+uploadNes.addEventListener("change", function() {
     readBlob()
 }, false);
 
-var newSheet = document.getElementById('new');
-newSheet.addEventListener('click', function() {
+var newSheet = document.getElementById("new");
+newSheet.addEventListener("click", function() {
     spriteRomData = new Uint8Array(512*16);
     NEStoCanvas(spriteRomData);
 });
 
-var savePng = document.getElementById('image');
-savePng.addEventListener('click', function() {
+var savePng = document.getElementById("image");
+savePng.addEventListener("click", function() {
     var image = canvas.toDataURL("image/png");
-    download(name || 'sprite.png', image, 'image/png');
+    var name = document.getElementById("nesfilename").value;
+    download(name || "sprite", image, "image/png");
 });
 
-var selectable = document.getElementsByClassName('selectable');
-
-for(var el of selectable) {
-    el.addEventListener('mouseup', handlePalleteChange);
+const selectable = document.getElementsByClassName("selectable");
+for(const el of selectable) {
+    el.addEventListener("mouseup", handlePaletteChange);
 }
 
-function handlePalleteChange(evt) {
-    if(evt.target.dataset.pallete) {
-        selectedPallete = evt.target.dataset.pallete;
+function handlePaletteChange(evt) {
+    if(evt.target.dataset.palette) {
+        selectedPalette = evt.target.dataset.palette;
     }
 
     if(evt.target.dataset.nes) {
         selectedColor = evt.target.style.backgroundColor;
         selectedNes = evt.target.dataset.nes;
+
+        for(const i in palette) {
+            // If color has already been selected, don't select it
+            if(palette[i].nes == selectedNes) {
+                selectedColor = null;
+                selectedNes = null;
+                return;
+            }
+        }
     }
 
-    if(selectedColor && selectedPallete) {
-        // save the current state of teh rom before switching palletes
-        spriteRomData = canvasToNES(imageData);
+    if(selectedColor && selectedPalette) {
 
-        var color = selectedColor.match(/(\d{1,3})\,\s*(\d{1,3})\,\s*(\d{1,3})/);
-        pallete[selectedPallete].r = color[1];
-        pallete[selectedPallete].g = color[2];
-        pallete[selectedPallete].b = color[3];
-        pallete[selectedPallete].nes = selectedNes;
-
-        // draw the rom with the new pallet data
-        NEStoCanvas(spriteRomData);
+        const color = selectedColor.match(/(\d{1,3})\,\s*(\d{1,3})\,\s*(\d{1,3})/);
+        swapPalettes(
+            selectedPalette, [
+                color[1], color[2], color[3]
+            ],
+            selectedNes
+        );
 
         selectedColor = null;
         selectedNes = null;
     }
-    updatePallet();
+    updatePalette();
+}
+
+function swapPalettes(sel, color, nes_id) {
+    // Save the current state of the ROM before switching palettes
+    spriteRomData = canvasToNES(imageData);
+
+    palette[sel].r = +color[0] || 0;
+    palette[sel].g = +color[1] || 0;
+    palette[sel].b = +color[2] || 0;
+    palette[sel].nes = nes_id;
+
+    // Draw the ROM with the new palette data
+    NEStoCanvas(spriteRomData);
+
+    updatePalette();
 }
 
 // Handle hotkeys
-window.addEventListener('keydown', function(evt) {
-    if(evt.keyCode == 49) {
-        selectedPallete = 'background'
-    }
+window.addEventListener("keydown", function(evt) {
+    if(evt.keyCode < 49 || evt.keyCode > 52) return;
 
-    if(evt.keyCode == 50) {
-        selectedPallete = 'color1'
-    }
+    if(evt.keyCode == 49) selectedPalette = "background";
+    if(evt.keyCode == 50) selectedPalette = "color1";
+    if(evt.keyCode == 51) selectedPalette = "color2";
+    if(evt.keyCode == 52) selectedPalette = "color3";
 
-    if(evt.keyCode == 51) {
-        selectedPallete = 'color2'
-    }
-    
-    if(evt.keyCode == 52) {
-        selectedPallete = 'color3'
-    }
-    updatePallet();
+    updatePalette();
 });
 
 function setElementColor(elementId, r, g, b) {
-    document.getElementById(elementId).style.backgroundColor = 'rgb('+r+','+g+','+b+')';
+    document.getElementById(elementId).style.backgroundColor = "rgb("+r+","+g+","+b+")";
 }
 
 function getColorLuminance(color) {
@@ -150,30 +162,85 @@ function getColorLuminance(color) {
 }
 
 function getWhiteOrBlack(color) {
-    return getColorLuminance(color) > .1 ? 'black' : 'white';
+    return getColorLuminance(color) > 64 ? "black" : "white";
 }
 
-function updatePallet() {
-    var bgColor = pallete.background;
-    var c1 = pallete.color1;
-    var c2 = pallete.color2;
-    var c3 = pallete.color3;
+const palette_input = document.getElementById("palette-input");
 
-    setElementColor('brush',  pallete[selectedPallete].r,  pallete[selectedPallete].g,  pallete[selectedPallete].b);
-    setElementColor('background', bgColor.r, bgColor.g, bgColor.b);
-    setElementColor('color1', c1.r, c1.g, c1.b);
-    setElementColor('color2', c2.r, c2.g, c2.b);
-    setElementColor('color3', c3.r, c3.g, c3.b);
-
-    document.getElementById('current').textContent = [bgColor.nes, c1.nes, c2.nes, c3.nes].join(',').replace(/0x/g, '$');
-
-    document.getElementById('brush').style.color = getWhiteOrBlack(pallete[selectedPallete]);
-    document.getElementById('background').style.color = getWhiteOrBlack(bgColor);
-    document.getElementById('color1').style.color = getWhiteOrBlack(c1);
-    document.getElementById('color2').style.color = getWhiteOrBlack(c2);
-    document.getElementById('color3').style.color = getWhiteOrBlack(c3);
+palette_input.onblur = function palette_blurred(e) {
+    userPalette(e.target);
 }
-updatePallet();
+
+palette_input.onkeyup = function palette_keyup(e) {
+    if(e.keyCode == 13)
+        userPalette(e.target);
+}
+
+function userPalette(pal_el) {
+    const pal = pal_el.value.replace(/\s+|[^$,0-9A-Fa-f]/g, "");
+
+    if(pal.length != 15
+    || pal.split(",").length != 4
+    || pal.split("$").length != 5) {
+        pal_el.value = "$0F,$16,$27,$18";
+        return;
+    }
+
+    const new_pal = pal.split(",$");     // ["$0F","16","27","18"]
+    new_pal[0] = new_pal[0].slice(1);    // ["0F","16","27","18"]
+
+    const reference = [
+        "background",
+        "color1",
+        "color2",
+        "color3"
+    ];
+
+    for(let i = 0; i < 4; i++) {
+        const new_nes = "0x" + new_pal[i];
+        const current_color = document.querySelector("[data-nes='" + new_nes + "']");
+        const color = current_color.style.background.match(/(\d{1,3})\,\s*(\d{1,3})\,\s*(\d{1,3})/);
+
+        swapPalettes(reference[i], [
+            color[1],
+            color[2],
+            color[3]
+        ], new_nes);
+    }
+}
+
+function updatePalette() {
+    var bgColor = palette.background;
+    var c1 = palette.color1;
+    var c2 = palette.color2;
+    var c3 = palette.color3;
+
+    const _b0 = document.getElementById("background");
+    const _c1 = document.getElementById("color1");
+    const _c2 = document.getElementById("color2");
+    const _c3 = document.getElementById("color3");
+
+    setElementColor("background", bgColor.r, bgColor.g, bgColor.b);
+    setElementColor("color1", c1.r, c1.g, c1.b);
+    setElementColor("color2", c2.r, c2.g, c2.b);
+    setElementColor("color3", c3.r, c3.g, c3.b);
+
+
+    _b0.style.color = getWhiteOrBlack(bgColor);
+    _c1.style.color = getWhiteOrBlack(c1);
+    _c2.style.color = getWhiteOrBlack(c2);
+    _c3.style.color = getWhiteOrBlack(c3);
+
+    _b0.removeAttribute("data-selected");
+    _c1.removeAttribute("data-selected");
+    _c2.removeAttribute("data-selected");
+    _c3.removeAttribute("data-selected");
+
+    document.getElementById(selectedPalette).setAttribute("data-selected", "");
+
+    palette_input.value = [bgColor.nes, c1.nes, c2.nes, c3.nes].join(',').replace(/0x/g, '$');
+}
+updatePalette();
 
 function getXY(evt) {
     var x = Math.floor((evt.pageX - evt.target.offsetLeft) / scale);
@@ -189,17 +256,17 @@ function getXY(evt) {
     }
 }
 
-canvas.addEventListener('mousemove', function(evt) {
+canvas.addEventListener("mousemove", function(evt) {
     var coords = getXY(evt);
-    document.getElementById('coord').innerText = 'Pixel (' + coords.x + ', ' + coords.y + ')';
+    document.getElementById("coord").innerText = "Pixel (" + coords.x + ", " + coords.y + ")";
 
     var ycoord = Math.floor((coords.y/8)) * 16;
     var tile = Math.floor((coords.x) / 8 + ycoord).toString(16).toUpperCase();
     if(tile.length < 2) {
-        tile = '0' + tile;
+        tile = "0" + tile;
     }
 
-    document.getElementById('tile').innerText = 'Tile $' + tile;
+    document.getElementById("tile").innerText = "Tile $" + tile;
     if(_isMouseDown) {
         handleDrawTool(evt);
     }
@@ -207,8 +274,8 @@ canvas.addEventListener('mousemove', function(evt) {
     drawCurrentPixelSelected(coords.x, coords.y);
 });
 
-canvas.addEventListener('mousedown', down);
-canvas.addEventListener('mouseup', up);
+canvas.addEventListener("mousedown", down);
+canvas.addEventListener("mouseup", up);
 
 var _isMouseDown = false;
 function down(evt) {
@@ -221,14 +288,14 @@ function up(evt) {
 
 function handleDrawTool(evt) {
     var coords = getXY(evt);
-    putPixel(coords.x, coords.y, pallete, selectedPallete, imageData);
+    putPixel(coords.x, coords.y, palette, selectedPalette, imageData);
     paintCanvas();
 }
 
 /// Drawing utilities
-function putPixel(x, y, pallete, palleteColor, imageData) {
+function putPixel(x, y, palette, paletteColor, imageData) {
     var canvasImageOffset = (x  + imageData.width * y) * 4;
-    var color = pallete[palleteColor];
+    var color = palette[paletteColor];
     imageData.data[canvasImageOffset + 0] = color.r;
     imageData.data[canvasImageOffset + 1] = color.g;
     imageData.data[canvasImageOffset + 2] = color.b;
@@ -254,8 +321,8 @@ function drawSpriteBorderGridLines() {
     var sHeight = canvas.height / 32;
 
     //ctx.save();
-    ctx.fillStyle = 'white';
-    ctx.strokeStyle = 'white';
+    ctx.fillStyle = "white";
+    ctx.strokeStyle = "white";
     ctx.lineWidth = 2;
     ctx.setLineDash([4, 4]);
     ctx.lineDashOffset = 2;
@@ -279,8 +346,8 @@ function drawCurrentPixelSelected(x, y) {
     var pWidth = canvas.width / 128;
     var pHeight = canvas.height / 256;
 
-    ctx.fillStyle = 'white';
-    ctx.strokeStyle = 'white';
+    ctx.fillStyle = "white";
+    ctx.strokeStyle = "white";
     ctx.lineWidth = 2;
     ctx.setLineDash([4, 4]);
     ctx.lineDashOffset = 2;
@@ -297,20 +364,20 @@ function paintCanvas() {
     }
 }
 
-function rgbColorToPalleteTuple(color, pallete) {
+function rgbColorToPaletteTuple(color, palette) {
     if(!color) {
-        throw new Error("Invalid color for current pallete! - " + colorKey(color));
+        throw new Error("Invalid color for current palette! - " + colorKey(color));
     }
     function colorKey(color) {
-        return color.r + '+'+ color.g + '+' + color.b;
+        return color.r + "+"+ color.g + "+" + color.b;
     }
-    var palleteHash = {};
-    palleteHash[colorKey(pallete.background)] = [0x0, 0x0];
-    palleteHash[colorKey(pallete.color1)] = [0x1, 0x0];
-    palleteHash[colorKey(pallete.color2)] = [0x0, 0x1];
-    palleteHash[colorKey(pallete.color3)] = [0x1, 0x1];
+    var paletteHash = {};
+    paletteHash[colorKey(palette.background)] = [0x0, 0x0];
+    paletteHash[colorKey(palette.color1)] = [0x1, 0x0];
+    paletteHash[colorKey(palette.color2)] = [0x0, 0x1];
+    paletteHash[colorKey(palette.color3)] = [0x1, 0x1];
 
-    var result = palleteHash[colorKey(color)] || [0x0, 0x0];
+    var result = paletteHash[colorKey(color)] || [0x0, 0x0];
 
     return result;
 }
@@ -339,12 +406,12 @@ function NEStoCanvas(byteArray) {
 
                 var color = ((channel1 >>> j) & mask) + (((channel2 >>> j) & mask) << 1)
 
-                putPixel(xpos + (7 - j), ypos + i, pallete, mapping[color], imageData);
-            }            
-        }        
+                putPixel(xpos + (7 - j), ypos + i, palette, mapping[color], imageData);
+            }
+        }
         xpos = (xpos + 8) % width;
     }
-    
+
     paintCanvas();
 }
 
@@ -362,11 +429,11 @@ function canvasToNES(imageData) {
             // extract which color it is from imageData
             var color = getPixel(x, y, imageData);
 
-            // find the pallet color
-            var palletTuple = rgbColorToPalleteTuple(color, pallete);
+            // find the palette color
+            var paletteTuple = rgbColorToPaletteTuple(color, palette);
 
             // write it to the tupleBuffer
-            tupleBuffer[x + imageData.width * y] = palletTuple;
+            tupleBuffer[x + imageData.width * y] = paletteTuple;
         }
     }
 
@@ -404,19 +471,19 @@ function canvasToNES(imageData) {
 function download(filename, byteArray, type) {
     // Convert to a blob
     var blob = new Blob([byteArray], {type: type});
-    if(type == 'octect/stream') {
+    if(type == "octect/stream") {
         var url = window.URL.createObjectURL(blob);
     } else {
         var url = byteArray;
     }
 
-    var pom = document.createElement('a');
-    pom.setAttribute('href', url);
-    pom.setAttribute('download', filename);
+    var pom = document.createElement("a");
+    pom.setAttribute("href", url);
+    pom.setAttribute("download", filename);
 
     if (document.createEvent) {
-        var event = document.createEvent('MouseEvents');
-        event.initEvent('click', true, true);
+        var event = document.createEvent("MouseEvents");
+        event.initEvent("click", true, true);
         pom.dispatchEvent(event);
     }
     else {
@@ -426,9 +493,9 @@ function download(filename, byteArray, type) {
 
 /// Upload utilities
 function readBlob() {
-    var files = document.getElementById('nesfile').files;
+    var files = document.getElementById("nesfile").files;
     if(!files.length) {
-        alert('Please select a file!');
+        alert("Please select a file!");
         return;
     }
 

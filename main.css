@@ -1,3 +1,7 @@
+body {
+    font-family: sans-serif;
+}
+
 #editor {
     margin: 20px;
     cursor: crosshair;
@@ -10,9 +14,9 @@
 }
 
 #current::before {
-    content: 'Pallete String: ';
-    font-size: 16px;
+    content: "Palette String: ";
     font-family: sans-serif;
+    font-size: 16px;
 }
 
 .right-panel {
@@ -26,27 +30,41 @@
 
 #info {
     padding: 10px;
-    border-style: solid;
-    border: black;
-    border-radius: 5px;
 }
 
-#brush {
-    width: 50px;
+#palette-current {
+    text-align: center;
 }
 
 .color {
-    padding: 10px;
-    text-align: center;
-    margin-left: auto;
-    margin-right: auto;
-    margin-bottom: 10px;
     display: inline-block;
-    width: 30px;
-    height: 30px;
-    border: black;
-    border-radius: 5px;
-    border-style: solid;
-    vertical-align: middle;
     color: white;
+    padding: 10px 15px;
+    height: 30px;
+    line-height: 30px;
+    border: 2px solid;
+    margin: auto auto 10px;
+    text-align: center;
+    vertical-align: middle;
+    user-select: none;
+}
+
+.color[data-selected] {
+    border: 2px dashed;
+    line-height: 20px;
+}
+
+.color[data-selected]::after {
+    content: "(brush)";
+    display: block;
+    font-size: 55%;
+    margin-top: -5px;
+}
+
+hr {
+    background: transparent;
+    border-width: 1px 10px 0 10px;
+    border-color: #000;
+    border-style: dashed;
+    margin: 20px auto;
 }
