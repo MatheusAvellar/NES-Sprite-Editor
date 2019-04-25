@@ -1,70 +1,70 @@
 body {
-    font-family: sans-serif;
+  font-family: sans-serif;
 }
 
 #editor {
-    margin: 20px;
-    cursor: crosshair;
-    cursor: url(pencil.png);
+  margin: 20px;
+  cursor: crosshair;
+  cursor: url(pencil.png);
 }
 
 #current {
-    font-family: monospace;
-    font-size: 18px;
+  font-family: monospace;
+  font-size: 18px;
 }
 
 #current::before {
-    content: "Palette String: ";
-    font-family: sans-serif;
-    font-size: 16px;
+  content: "Palette String: ";
+  font-family: sans-serif;
+  font-size: 16px;
 }
 
 .right-panel {
-    position: fixed;
-    top: 25px;
-    right: 25px;
-    padding: 10px;
-    border: 2px solid #000;
-    background-color: rgba(255, 255, 255, 0.85);
+  position: fixed;
+  top: 25px;
+  right: 25px;
+  padding: 10px;
+  border: 2px solid #000;
+  background-color: rgba(255, 255, 255, 0.85);
 }
 
 #info {
-    padding: 10px;
+  padding: 10px;
 }
 
 #palette-current {
-    text-align: center;
+  text-align: center;
 }
 
 .color {
-    display: inline-block;
-    color: white;
-    padding: 10px 15px;
-    height: 30px;
-    line-height: 30px;
-    border: 2px solid;
-    margin: auto auto 10px;
-    text-align: center;
-    vertical-align: middle;
-    user-select: none;
+  display: inline-block;
+  color: white;
+  padding: 10px 15px;
+  height: 30px;
+  line-height: 30px;
+  border: 2px solid;
+  margin: auto auto 10px;
+  text-align: center;
+  vertical-align: middle;
+  user-select: none;
 }
 
 .color[data-selected] {
-    border: 2px dashed;
-    line-height: 20px;
+  border: 2px dashed;
+  line-height: 20px;
 }
 
 .color[data-selected]::after {
-    content: "(brush)";
-    display: block;
-    font-size: 55%;
-    margin-top: -5px;
+  content: "(brush)";
+  display: block;
+  font-size: 55%;
+  margin-top: -5px;
 }
 
 hr {
-    background: transparent;
-    border-width: 1px 10px 0 10px;
-    border-color: #000;
-    border-style: dashed;
-    margin: 20px auto;
+  background: transparent;
+  border-width: 1px 10px 0 10px;
+  border-color: #000;
+  border-style: dashed;
+  margin: 20px auto;
 }
