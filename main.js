@@ -1,39 +1,12 @@
-// Canvas bootstrapping
-var canvas = document.getElementById("editor");
-var spriteRomData = null;
-
-var scale = 10;
-var width = 128;
-var height = 256;
-
-canvas.width = width * scale;
-canvas.height = height * scale;
-
-var ctx = canvas.getContext("2d");
-ctx.imageSmoothingEnabled = false;
-
-document.body.appendChild(canvas);
-
-ctx.fillStyle = "gray";
-ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-var spriteCanvas = document.createElement("canvas");
-spriteCanvas.width = width;
-spriteCanvas.height = height;
-var spriteCtx = spriteCanvas.getContext("2d");
-spriteCtx.imageSmoothingEnabled = false;
-
-var imageData = ctx.getImageData(0, 0, spriteCanvas.width, spriteCanvas.height);
-var data = imageData.data;
+/* Intialization */
 
 // Editor data
+const mapping = ["background", "color1", "color2", "color3"]
 
-var mapping = ["background", "color1", "color2", "color3"]
-
-var palette = {
-  background: { // rgb(0,0,0)
-    r: 0, g: 0, b: 0,
-    nes: "0x0F"
+const palette = {
+  background: { // rgb(124,124,124)
+    r: 124, g: 124, b: 124,
+    nes: "0x00"
   },
   color1: { // rgb(248,56,0)
     r: 248, g: 56, b: 0,
@@ -43,54 +16,136 @@ var palette = {
     r: 252, g: 160, b: 68,
     nes: "0x27"
   },
-  color3: { //rgb(172,124,0)
+  color3: { // rgb(172,124,0)
     r: 172, g: 124, b: 0,
     nes: "0x18"
   }
+};
+
+function toRGB(obj) {
+  return `rgb(${obj.r},${obj.g},${obj.b})`;
 }
+
+// Canvases
+const SCALE = 10;
+const WIDTH = 128;
+const HEIGHT = 256;
+
+const canvas = document.getElementById("editor");
+const spriteCanvas = document.createElement("canvas");
+
+const ctx = canvas.getContext("2d");
+const spriteCtx = spriteCanvas.getContext("2d");
+
+canvas.width = WIDTH * SCALE;
+canvas.height = HEIGHT * SCALE;
+spriteCanvas.width = WIDTH;
+spriteCanvas.height = HEIGHT;
+
+// Disable any upscaling blurring effects
+// (must be done *after* setting the sizes)
+function disableSmoothing() {
+  ctx.imageSmoothingEnabled = false;
+  spriteCtx.imageSmoothingEnabled = false;
+}
+disableSmoothing();
+
+// Fill canvas with "background" color from palette
+ctx.fillStyle = toRGB(palette.background);
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+var spriteRomData = null;
+
+var imageData = ctx.getImageData(0, 0, spriteCanvas.width, spriteCanvas.height);
 
 var selectedPalette = "background";
 var selectedColor = null;
 var selectedNes = null;
 
-var showGridLines = true;
+/* Events */
 
+let showGridLines = true;
 function toggleGrid(evt) {
   showGridLines = !showGridLines;
   paintCanvas();
 }
-
 document.getElementById("grid").onchange = toggleGrid;
 
-document.getElementById("nes").onclick = function() {
-  var name = document.getElementById("nesfilename").value || "sprite";
-  spriteRomData = canvasToNES(imageData);
-  download(name + ".chr", spriteRomData, "octect/stream");
-};
 
-var uploadNes = document.getElementById("nesfile")
-uploadNes.addEventListener("change", function() {
-  readBlob()
-}, false);
+// Upload .chr or image
+document.getElementById("nesfile").addEventListener("change", readBlob, false);
+document.getElementById("imgfile").addEventListener("change", readImage, false);
 
-var newSheet = document.getElementById("new");
-newSheet.addEventListener("click", function() {
-  spriteRomData = new Uint8Array(512*16);
-  NEStoCanvas(spriteRomData);
+// Download as image
+document.getElementById("image").addEventListener("click", function() {
+  let image;
+
+  // If grid lines are toggled...
+  if(showGridLines) {
+    // Disable grid lines
+    showGridLines = false;
+
+    // Use unscaled (1:1) canvas size before downloading
+    // TODO: Add a zoom() functionality to replace this
+    canvas.width = WIDTH;
+    canvas.height = HEIGHT;
+
+    // Repaint canvas (without grid and at 1:1 scale)
+    paintCanvas(1);
+
+    // Store canvas image (to be downloaded)
+    image = canvas.toDataURL("image/png");
+
+    // Reset grid line setting
+    showGridLines = true;
+
+    // Restore the canvas' original (scaled) size
+    canvas.width = WIDTH * SCALE;
+    canvas.height = HEIGHT * SCALE;
+
+    // Repaint canvas (now with grid and zoom again)
+    paintCanvas();
+  } else {
+    // Use unscaled (1:1) canvas size before downloading
+    // TODO: Add a zoom() functionality to replace this
+    canvas.width = WIDTH;
+    canvas.height = HEIGHT;
+
+    // Repaint canvas (without grid and at 1:1 scale)
+    paintCanvas(1);
+
+    // Store canvas image (to be downloaded)
+    image = canvas.toDataURL("image/png");
+
+    // Restore the canvas' original (scaled) size
+    canvas.width = WIDTH * SCALE;
+    canvas.height = HEIGHT * SCALE;
+
+    // Repaint canvas (now with grid and zoom again)
+    paintCanvas();
+  }
+
+  const name = document.getElementById("nesfilename").value || "sprite";
+  download(name, image, "image/png");
 });
 
-var savePng = document.getElementById("image");
-savePng.addEventListener("click", function() {
-  var image = canvas.toDataURL("image/png");
-  var name = document.getElementById("nesfilename").value;
-  download(name || "sprite", image, "image/png");
+// Download as .chr
+document.getElementById("nes").addEventListener("click", function() {
+  const name = document.getElementById("nesfilename").value || "sprite";
+  spriteRomData = canvasToNES(imageData);
+  download(name + ".chr", spriteRomData, "octect/stream");
+});
+
+// Reset canvas
+document.getElementById("new").addEventListener("click", function() {
+  spriteRomData = new Uint8Array(512*16);
+  NEStoCanvas(spriteRomData);
 });
 
 const selectable = document.getElementsByClassName("selectable");
 for(const el of selectable) {
   el.addEventListener("mouseup", handlePaletteChange);
 }
-
 function handlePaletteChange(evt) {
   if(evt.target.dataset.palette) {
     selectedPalette = evt.target.dataset.palette;
@@ -111,7 +166,6 @@ function handlePaletteChange(evt) {
   }
 
   if(selectedColor && selectedPalette) {
-
     const color = selectedColor.match(/(\d{1,3})\,\s*(\d{1,3})\,\s*(\d{1,3})/);
     swapPalettes(
       selectedPalette, [
@@ -126,21 +180,6 @@ function handlePaletteChange(evt) {
   updatePalette();
 }
 
-function swapPalettes(sel, color, nes_id) {
-  // Save the current state of the ROM before switching palettes
-  spriteRomData = canvasToNES(imageData);
-
-  palette[sel].r = +color[0] || 0;
-  palette[sel].g = +color[1] || 0;
-  palette[sel].b = +color[2] || 0;
-  palette[sel].nes = nes_id;
-
-  // Draw the ROM with the new palette data
-  NEStoCanvas(spriteRomData);
-
-  updatePalette();
-}
-
 // Handle hotkeys
 window.addEventListener("keydown", function(evt) {
   if(evt.keyCode < 49 || evt.keyCode > 52) return;
@@ -152,6 +191,22 @@ window.addEventListener("keydown", function(evt) {
 
   updatePalette();
 });
+
+function swapPalettes(sel, color, nes_id) {
+  // Save the current state of the ROM before switching palettes
+  spriteRomData = canvasToNES(imageData);
+
+  // Effectively swap palette
+  palette[sel].r = +color[0] || 0;
+  palette[sel].g = +color[1] || 0;
+  palette[sel].b = +color[2] || 0;
+  palette[sel].nes = nes_id;
+
+  // Draw the ROM with the new palette data
+  NEStoCanvas(spriteRomData);
+
+  updatePalette();
+}
 
 function setElementColor(elementId, r, g, b) {
   document.getElementById(elementId).style.backgroundColor = "rgb("+r+","+g+","+b+")";
@@ -225,7 +280,6 @@ function updatePalette() {
   setElementColor("color2", c2.r, c2.g, c2.b);
   setElementColor("color3", c3.r, c3.g, c3.b);
 
-
   _b0.style.color = getWhiteOrBlack(bgColor);
   _c1.style.color = getWhiteOrBlack(c1);
   _c2.style.color = getWhiteOrBlack(c2);
@@ -243,12 +297,8 @@ function updatePalette() {
 updatePalette();
 
 function getXY(evt) {
-  var scrollTop = window.pageYOffset
-  || document.documentElement.scrollTop
-  || document.body.scrollTop
-  || 0;
-  var x = Math.floor((evt.pageX - evt.target.offsetLeft) / scale);
-  var y = Math.floor((evt.pageY - evt.target.offsetTop + scrollTop) / scale);
+  const x = Math.floor((evt.pageX - evt.target.offsetLeft) / SCALE);
+  const y = Math.floor((evt.pageY - evt.target.offsetTop) / SCALE);
 
   // Return only positive coordinates
   if(x < 0) x = 0;
@@ -257,7 +307,7 @@ function getXY(evt) {
   return {
     x: x,
     y: y
-  }
+  };
 }
 
 canvas.addEventListener("mousemove", function(evt) {
@@ -296,9 +346,13 @@ function handleDrawTool(evt) {
   paintCanvas();
 }
 
-/// Drawing utilities
+// Drawing utilities
+function getCanvasImageOffset(x,y,imageData) {
+  return (x  + imageData.width * y) * 4;
+}
+
 function putPixel(x, y, palette, paletteColor, imageData) {
-  var canvasImageOffset = (x  + imageData.width * y) * 4;
+  var canvasImageOffset = getCanvasImageOffset(x,y,imageData);
   var color = palette[paletteColor];
   imageData.data[canvasImageOffset + 0] = color.r;
   imageData.data[canvasImageOffset + 1] = color.g;
@@ -306,7 +360,7 @@ function putPixel(x, y, palette, paletteColor, imageData) {
 }
 
 function getPixel(x, y, imageData) {
-  var canvasImageOffset = (x  + imageData.width * y) * 4;
+  var canvasImageOffset = getCanvasImageOffset(x,y,imageData);
   var color = {
     r: imageData.data[canvasImageOffset + 0],
     g: imageData.data[canvasImageOffset + 1],
@@ -356,16 +410,27 @@ function drawCurrentPixelSelected(x, y) {
   ctx.setLineDash([4, 4]);
   ctx.lineDashOffset = 2;
   ctx.beginPath()
-  ctx.strokeRect(x * scale, y * scale, pWidth, pHeight);
+  ctx.strokeRect(x * SCALE, y * SCALE, pWidth, pHeight);
   ctx.stroke();
 }
 
-function paintCanvas() {
+function paintCanvas(scale) {
+  // If no custom scale has been defined, use default
+  if(!scale)
+    scale = SCALE;
+
+  const scaled_W = WIDTH * scale;
+  const scaled_H = HEIGHT * scale;
+
+  if(canvas.width != scaled_W) canvas.width = scaled_W;
+  if(canvas.height != scaled_H) canvas.height = scaled_H;
+  disableSmoothing(/* yes, again */);
+
   spriteCtx.putImageData(imageData, 0, 0);
-  ctx.drawImage(spriteCanvas, 0, 0, width * scale, height * scale);
-  if(showGridLines) {
+  ctx.drawImage(spriteCanvas, 0, 0, scaled_W, scaled_H);
+
+  if(showGridLines)
     drawSpriteBorderGridLines();
-  }
 }
 
 function rgbColorToPaletteTuple(color, palette) {
@@ -381,7 +446,7 @@ function rgbColorToPaletteTuple(color, palette) {
   paletteHash[colorKey(palette.color2)] = [0x0, 0x1];
   paletteHash[colorKey(palette.color3)] = [0x1, 0x1];
 
-  var result = paletteHash[colorKey(color)] || [0x0, 0x0];
+  var result = paletteHash[colorKey(color)] || [0, 0];
 
   return result;
 }
@@ -398,7 +463,7 @@ function NEStoCanvas(byteArray) {
   //  (0,1) color 2
   //  (1,1) color 3
   for(var b = 0; b < byteArray.length; b+=16) {
-    ypos = Math.floor(b/height) * 8
+    ypos = Math.floor(b/HEIGHT) * 8
     // draw sprite
     for(var i = 0; i < 8; i++) {
       for(var j = 7; j >= 0; j--) {
@@ -413,14 +478,13 @@ function NEStoCanvas(byteArray) {
         putPixel(xpos + (7 - j), ypos + i, palette, mapping[color], imageData);
       }
     }
-    xpos = (xpos + 8) % width;
+    xpos = (xpos + 8) % WIDTH;
   }
 
   paintCanvas();
 }
 
-/// Translate raw canvas pixles to NES Binary
-
+// Translate raw canvas pixles to NES Binary
 function canvasToNES(imageData) {
   // move 16 byte sprite and 512 sprites
   var byteArray = new Uint8Array(512 * 16);
@@ -445,7 +509,7 @@ function canvasToNES(imageData) {
   var xtotal = 0;
   var ytotal = 0;
   for(var i = 0; i < byteArray.length; i+=8) {
-    ytotal = Math.floor(i/height) * 8
+    ytotal = Math.floor(i/HEIGHT) * 8;
 
     for(var y = ytotal; y < (ytotal + 8); y++) {
       // do each row channel
@@ -464,50 +528,37 @@ function canvasToNES(imageData) {
       i++;
     }
 
-    xtotal = (xtotal + 8) % width;
+    xtotal = (xtotal + 8) % WIDTH;
   }
 
   return byteArray;
 }
 
 
-/// Download utilities
+// Download utilities
 function download(filename, byteArray, type) {
   // Convert to a blob
-  var blob = new Blob([byteArray], {type: type});
-  if(type == "octect/stream") {
-    var url = window.URL.createObjectURL(blob);
-  } else {
-    var url = byteArray;
-  }
+  const blob = new Blob([byteArray], {type: type});
 
-  var pom = document.createElement("a");
+  // Get blob URL
+  const url = (type == "octect/stream")
+    ? window.URL.createObjectURL(blob)
+    : byteArray;
+
+  // Create and click on download "button"
+  const pom = document.createElement("a");
   pom.setAttribute("href", url);
   pom.setAttribute("download", filename);
-
-  if (document.createEvent) {
-    var event = document.createEvent("MouseEvents");
-    event.initEvent("click", true, true);
-    pom.dispatchEvent(event);
-  }
-  else {
-    pom.click();
-  }
+  pom.click();
+  pom.remove();
 }
 
-/// Upload utilities
+// Upload utilities
 function readBlob() {
-  var files = document.getElementById("nesfile").files;
-  if(!files.length) {
-    alert("Please select a file!");
-    return;
-  }
+  const files = document.getElementById("nesfile").files;
+  if(!files.length) return;
 
-  var file = files[0];
-  var start = 0;
-  var stop = file.size - 1;
-
-  var reader = new FileReader();
+  const reader = new FileReader();
 
   // If we use onloadend, we need to check the readyState.
   reader.onloadend = function(evt) {
@@ -517,25 +568,48 @@ function readBlob() {
     }
   };
 
-  var blob = file.slice(start, stop + 1);
-  reader.readAsArrayBuffer(blob);
+  reader.readAsArrayBuffer(files[0]);
+
+  // Reset input (so that the same file may be reuploaded if need be)
+  this.value = "";
 }
 
+function readImage() {
+  /* TODO: Fix palette issues
+  /* As of right now, when you upload an image, it just throws it in the canvas,
+   * regardless of the colors in it; Unless the image is using the exact same
+   * palette as you have selected, it's bound to cause some problems.
+   */
+  const files = document.getElementById("imgfile").files;
+  if(!files.length) return;
 
-/// Load up default sprite sheet
-var xhr = new XMLHttpRequest();
-xhr.open("GET", "main.chr")
-xhr.responseType = "arraybuffer";
+  const img = new Image();
+  img.onload = function() {
+    spriteCtx.drawImage(img,0,0);
+    imageData = spriteCtx.getImageData(0, 0, spriteCanvas.width, spriteCanvas.height);
 
-xhr.addEventListener("load", function(evt) {
-  if(xhr.status >= 400) {
-    // Failed to retrieve "main.chr"
-    console.warn(xhr.status + " - " + xhr.statusText);
-    spriteRomData = new Uint8Array(0);
-  } else {
-    spriteRomData = new Uint8Array(xhr.response);
+    console.log("draw");
   }
-  NEStoCanvas(spriteRomData);
-});
+  img.src = URL.createObjectURL(files[0]);
 
-xhr.send();
+  // Reset input (so that the same file may be reuploaded if need be)
+  this.value = "";
+}
+
+// Load up default sprite sheet
+// const xhr = new XMLHttpRequest();
+// xhr.open("GET", "main.chr")
+// xhr.responseType = "arraybuffer";
+
+// xhr.addEventListener("load", function(evt) {
+//   if(xhr.status >= 400) {
+//     // Failed to retrieve "main.chr"
+//     console.warn(xhr.status + " - " + xhr.statusText);
+//     spriteRomData = new Uint8Array(0);
+//   } else {
+//     spriteRomData = new Uint8Array(xhr.response);
+//   }
+//   NEStoCanvas(spriteRomData);
+// });
+
+// xhr.send();
