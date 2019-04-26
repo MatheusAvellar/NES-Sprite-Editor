@@ -27,7 +27,7 @@ function toRGB(obj) {
 }
 
 // Canvases
-const SCALE = 10;
+const SCALE = 20;
 const WIDTH = 128;
 const HEIGHT = 256;
 
@@ -62,8 +62,12 @@ var selectedPalette = "background";
 var selectedColor = null;
 var selectedNes = null;
 
-/* Events */
+// Preview
+const preview = document.getElementById("preview");
+preview.width = WIDTH;
+preview.height = HEIGHT;
 
+/* Events */
 let showGridLines = true;
 function toggleGrid(evt) {
   showGridLines = !showGridLines;
@@ -297,8 +301,8 @@ function updatePalette() {
 updatePalette();
 
 function getXY(evt) {
-  const x = Math.floor((evt.pageX - evt.target.offsetLeft) / SCALE);
-  const y = Math.floor((evt.pageY - evt.target.offsetTop) / SCALE);
+  let x = Math.floor(evt.offsetX / SCALE);
+  let y = Math.floor(evt.offsetY / SCALE);
 
   // Return only positive coordinates
   if(x < 0) x = 0;
@@ -344,6 +348,7 @@ function handleDrawTool(evt) {
   var coords = getXY(evt);
   putPixel(coords.x, coords.y, palette, selectedPalette, imageData);
   paintCanvas();
+  updatePreview();
 }
 
 // Drawing utilities
@@ -422,15 +427,32 @@ function paintCanvas(scale) {
   const scaled_W = WIDTH * scale;
   const scaled_H = HEIGHT * scale;
 
-  if(canvas.width != scaled_W) canvas.width = scaled_W;
-  if(canvas.height != scaled_H) canvas.height = scaled_H;
-  disableSmoothing(/* yes, again */);
+  resizeCanvas(scaled_W, scaled_H);
 
   spriteCtx.putImageData(imageData, 0, 0);
   ctx.drawImage(spriteCanvas, 0, 0, scaled_W, scaled_H);
 
   if(showGridLines)
     drawSpriteBorderGridLines();
+}
+
+function updatePreview() {
+  resizeCanvas(WIDTH, HEIGHT);
+  spriteCtx.putImageData(imageData, 0, 0);
+  ctx.drawImage(spriteCanvas, 0, 0, WIDTH, HEIGHT);
+  preview.src = canvas.toDataURL("image/png");
+  resizeCanvas(WIDTH*SCALE, HEIGHT*SCALE);
+
+  paintCanvas();
+}
+
+function resizeCanvas(w,h) {
+  if(canvas.width == w && canvas.height != h)
+    return;
+
+  canvas.width = w;
+  canvas.height = h;
+  disableSmoothing(/* yes, again */);
 }
 
 function rgbColorToPaletteTuple(color, palette) {
@@ -482,6 +504,7 @@ function NEStoCanvas(byteArray) {
   }
 
   paintCanvas();
+  updatePreview();
 }
 
 // Translate raw canvas pixles to NES Binary
@@ -587,8 +610,6 @@ function readImage() {
   img.onload = function() {
     spriteCtx.drawImage(img,0,0);
     imageData = spriteCtx.getImageData(0, 0, spriteCanvas.width, spriteCanvas.height);
-
-    console.log("draw");
   }
   img.src = URL.createObjectURL(files[0]);
 
