@@ -27,7 +27,7 @@ function toRGB(obj) {
 }
 
 // Canvases
-const SCALE = 20;
+let SCALE = 20;
 const WIDTH = 128;
 const HEIGHT = 256;
 
@@ -145,6 +145,15 @@ document.getElementById("new").addEventListener("click", function() {
   spriteRomData = new Uint8Array(512*16);
   NEStoCanvas(spriteRomData);
 });
+
+const zoom = document.getElementsByClassName("zoom");
+for(const el of zoom) {
+  el.addEventListener("click", toggleZoom);
+}
+function toggleZoom() {
+  SCALE = this.dataset.value || 10;
+  paintCanvas();
+}
 
 const selectable = document.getElementsByClassName("selectable");
 for(const el of selectable) {
@@ -380,37 +389,50 @@ function getPixel(x, y, imageData) {
 }
 
 function drawSpriteBorderGridLines() {
-  var sWidth = canvas.width / 16;
-  var sHeight = canvas.height / 32;
+  const sWidth = canvas.width / 16;
+  const sHeight = canvas.height / 32;
 
-  //ctx.save();
-  ctx.fillStyle = "white";
-  ctx.strokeStyle = "white";
+  // If background palette is too bright,
+  // draw black gridlines instead of white ones
+  if(palette.background.nes == "0x20"
+  || palette.background.nes == "0x30") {
+    ctx.fillStyle = "#000";
+    ctx.strokeStyle = "#000";
+  } else {
+    ctx.fillStyle = "#fff";
+    ctx.strokeStyle = "#fff";
+  }
   ctx.lineWidth = 2;
   ctx.setLineDash([4, 4]);
   ctx.lineDashOffset = 2;
-  for(var x = 0; x < 15; x++) {
+  for(let x = 0; x < 15; x++) {
     ctx.beginPath()
     ctx.moveTo(x * sWidth + sWidth, 0);
     ctx.lineTo(x * sWidth + sWidth, canvas.height);
     ctx.stroke();
   }
-  for(var y = 0; y < 31; y++) {
+  for(let y = 0; y < 31; y++) {
     ctx.beginPath();
     ctx.moveTo(0, y * sHeight + sHeight)
     ctx.lineTo(canvas.width, y * sHeight + sHeight)
     ctx.stroke();
   }
-
-  //ctx.restore();
 }
 
 function drawCurrentPixelSelected(x, y) {
-  var pWidth = canvas.width / 128;
-  var pHeight = canvas.height / 256;
+  const pWidth = canvas.width / 128;
+  const pHeight = canvas.height / 256;
 
-  ctx.fillStyle = "white";
-  ctx.strokeStyle = "white";
+  // If background palette is too bright,
+  // draw a black box instead of a white one
+  if(palette.background.nes == "0x20"
+  || palette.background.nes == "0x30") {
+    ctx.fillStyle = "#000";
+    ctx.strokeStyle = "#000";
+  } else {
+    ctx.fillStyle = "#fff";
+    ctx.strokeStyle = "#fff";
+  }
   ctx.lineWidth = 2;
   ctx.setLineDash([4, 4]);
   ctx.lineDashOffset = 2;

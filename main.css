@@ -6,26 +6,36 @@ html, body {
 }
 body {
   display: grid;
-  grid-template-columns: 20fr auto;
+  grid-template-columns: 400px auto;
   overflow: hidden;
 }
 #side-panel {
   padding: 5px;
   border-right: 1px solid #c0c0c0;
+  box-sizing: border-box;
+}
+figure {
+  margin: 0;
+  display: inline-block;
 }
 #preview {
   border: 0;
-  background-color: #c0c0c0;
-  outline: 1px solid #c0c0c0;
+  background-color: #7c7c7c;
+  outline: 1px solid #7c7c7c;
+}
+#zoom {
+  display: inline-block;
 }
 #canvas-wrapper {
+  background: repeating-linear-gradient(45deg,#606dbc,#606dbc 10px,#465298 10px,#465298 20px);
   height: 100vh;
-  overflow-x: scroll;
+  overflow: scroll;
   font-size: 0;
+  text-align: center;
 }
 #editor {
   cursor: crosshair;
-  cursor: url(pencil.png);
+  border: 1px solid #c0c0c0;
 }
 #current {
   font-family: monospace;
@@ -79,10 +89,31 @@ body {
   width: 20px;
   height: 20px;
 }
+#palette-table td:hover {
+  outline: 1px solid #000;
+}
 hr {
   background: transparent;
   border-width: 1px 10px 0 10px;
   border-color: #000;
   border-style: dashed;
   margin: 20px auto;
+}
+button {
+  border: 0;
+  background-color: #606dbc;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 2px;
+  box-shadow: 0 2px 0 #465298;
+  transition: 0.1s ease all;
+  outline: none;
+}
+button:focus {
+  background-color: #7986d2;
+}
+button:active {
+  transform: translateY(2px);
+  box-shadow: 0px 0px 0px #465298;
+  background-color: #7986d2;
 }
