@@ -3,7 +3,7 @@
 A simple web editor for NES sprites.
 
 <p align="center">
-  <img src="https://i.imgur.com/bnUYC0f.png"/>
+  <img src="https://i.imgur.com/CMIer9V.png"/>
 </p>
 
 # Functionalities
@@ -28,3 +28,7 @@ better, attempt to automatically detect a palette from a given image.
 scroll there. It fixes itself if you select another zoom level and then come back. Is this a Chrome
 bug? Is this a CSS bug? We may never find out
 - The code is kind of a mess. Someone should fix that.
+- For some reason, both the color 1 (CL1) and color 2 (CL2) selection boxes grow by a single pixel
+when you alternate color 1 is selected, but shrink back again when background (BKG) is selected.
+Notice that CL1 grows on its left side, while CL2 grows on its right side:<br>
+![GIF animation of the boxes growing / shrinking](https://i.imgur.com/MXnFfLZ.gif)
