@@ -195,6 +195,8 @@ function handlePaletteChange(evt) {
 
 // Handle hotkeys
 window.addEventListener("keydown", function(evt) {
+  // Don't trigger keydown if user is typing on an input element
+  if(evt.target.tagName === "INPUT") return;
   if(evt.keyCode < 49 || evt.keyCode > 52) return;
 
   if(evt.keyCode == 49) selectedPalette = "background";
@@ -234,28 +236,24 @@ function getWhiteOrBlack(color) {
 }
 
 const palette_input = document.getElementById("palette-input");
-
-palette_input.onblur = function palette_blurred(e) {
-  userPalette(e.target);
-}
-
+palette_input.onblur = userPalette;
 palette_input.onkeyup = function palette_keyup(e) {
   if(e.keyCode == 13)
-    userPalette(e.target);
+    userPalette.bind(e.target)();
 }
 
-function userPalette(pal_el) {
-  const pal = pal_el.value.replace(/\s+|[^$,0-9A-Fa-f]/g, "");
+function userPalette() {
+  const pal = this.value.replace(/\s+|[^$,0-9A-Fa-f]/g, "");
 
   if(pal.length != 15
   || pal.split(",").length != 4
   || pal.split("$").length != 5) {
-    pal_el.value = "$0F,$16,$27,$18";
+    this.value = "$00,$16,$27,$18";
     return;
   }
 
-  const new_pal = pal.split(",$");     // ["$0F","16","27","18"]
-  new_pal[0] = new_pal[0].slice(1);    // ["0F","16","27","18"]
+  const new_pal = pal.split(",$");     // ["$00","16","27","18"]
+  new_pal[0] = new_pal[0].slice(1);    // ["00","16","27","18"]
 
   const reference = [
     "background",

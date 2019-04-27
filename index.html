@@ -4,6 +4,7 @@
   <meta charset="utf-8"/>
   <title> NES Sprite Editor </title>
   <link rel="stylesheet" href="main.css"/>
+  <link href="https://fonts.googleapis.com/css?family=Roboto+Condensed" rel="stylesheet">
 </head>
 <body>
   <aside id="side-panel">
@@ -105,17 +106,19 @@
         </tr>
         </tbody>
       </table>
-      <input id="grid" type="checkbox" checked="checked">Show grid lines</input><br/>
     </div>
     <hr>
-    <label for="nesfile">Upload <code>.chr</code> file: </label>
-    <input type="file" id="nesfile"/>
-    <br>
-    <label for="nesfile">Upload image file: </label>
-    <input type="file" id="imgfile"/>
-    <br>
-    <label>Or</label>
-    <button id="new">Create new sprite sheet</button>
+    <p>
+      <label for="nesfile">Open <code>.chr</code> file: </label>
+      <input type="file" id="nesfile"/>
+    </p>
+    <p>
+      <label for="imgfile">Open image file: </label>
+      <input type="file" id="imgfile"/>
+    </p>
+    <p>
+      <button id="new">Create new sprite sheet</button>
+    </p>
     <hr>
     <label for="nesfilename">Save file as</label>
     <input  id="nesfilename" type="text" placeholder="filename" />
@@ -125,11 +128,17 @@
     <figure>
       <img id="preview"/>
     </figure>
-    <section id="zoom">
-      <label>Zoom:</label>
-      <button class="zoom" data-value="5">5x</button>
-      <button class="zoom" data-value="10">10x</button>
-      <button class="zoom" data-value="20">20x</button>
+    <section id="editor-config">
+      <p>
+        <label>Zoom:</label>
+        <button class="zoom" data-value="5">5x</button>
+        <button class="zoom" data-value="10">10x</button>
+        <button class="zoom" data-value="20">20x</button>
+      </p>
+      <p>
+        <input id="grid" type="checkbox" checked="checked"/>
+        <label for="grid">Show grid lines</label>
+      </p>
     </section>
 <!--     <pre>$3F00 Universal background color
 $3F01-$3F03 Background palette 0
