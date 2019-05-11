@@ -9,7 +9,7 @@
 <body>
   <aside id="side-panel">
     <div id="info">
-      <span id="coord"> Pixel (0, 0) </span> <span id="tile"> Tile $00 </span>
+      <span id="coord"> Pixel (0, 0) </span> Tile <span id="tile">$00 (00)</span>
       <div id="current">
         <input id="palette-input" value="$0F,$16,$27,$18" placeholder="$0F,$16,$27,$18" type="text" maxlength="15"/>
       </div>
@@ -138,6 +138,15 @@
       <p>
         <input id="grid" type="checkbox" checked="checked"/>
         <label for="grid">Show grid lines</label>
+      </p>
+      <p>
+        <label>Tool:</label>
+        <button class="pick-tool" data-value="draw">
+          <img srcset="draw.svg" src="draw.png"/>
+        </button>
+        <button class="pick-tool" data-value="select">
+          <img srcset="select.svg" src="select.png"/>
+        </button>
       </p>
     </section>
 <!--     <pre>$3F00 Universal background color

@@ -26,6 +26,30 @@ function toRGB(obj) {
   return `rgb(${obj.r},${obj.g},${obj.b})`;
 }
 
+// What tool is currently selected
+let tool = "draw";
+
+const mouse = {
+  isDown: false,
+  real: {
+    x: 0,
+    y: 0,
+  },
+  x: 0,
+  y: 0,
+};
+
+const selection = {
+  exists: false,
+  selecting: false,
+  start: {
+    x: -1, y: -1
+  },
+  end: {
+    x: -1, y: -1
+  }
+};
+
 // Canvases
 let SCALE = 20;
 const WIDTH = 128;
@@ -149,10 +173,33 @@ document.getElementById("new").addEventListener("click", function() {
 const zoom = document.getElementsByClassName("zoom");
 for(const el of zoom) {
   el.addEventListener("click", toggleZoom);
+  if(+el.dataset.value == SCALE)
+    el.disabled = true;
 }
 function toggleZoom() {
+  for(const el of zoom)
+    el.disabled = false;
+
+  this.disabled = true;
   SCALE = this.dataset.value || 10;
   paintCanvas();
+}
+
+const pick_tool = document.getElementsByClassName("pick-tool");
+for(const el of pick_tool) {
+  el.addEventListener("click", toggleTool);
+  if(el.dataset.value == tool) {
+    el.disabled = true;
+    canvas.className = tool;
+  }
+}
+function toggleTool() {
+  for(const el of pick_tool)
+    el.disabled = false;
+
+  this.disabled = true;
+  tool = this.dataset.value || "draw";
+  canvas.className = tool;
 }
 
 const selectable = document.getElementsByClassName("selectable");
@@ -322,58 +369,126 @@ function getXY(evt) {
 }
 
 canvas.addEventListener("mousemove", function(evt) {
-  var coords = getXY(evt);
-  document.getElementById("coord").innerText = "Pixel (" + coords.x + ", " + coords.y + ")";
+  // Update coordinates on mouse object
+  const newCoords = getXY(evt);
+  mouse.x = newCoords.x;
+  mouse.y = newCoords.y;
+  mouse.real.x = evt.offsetX;
+  mouse.real.y = evt.offsetY;
 
-  var ycoord = Math.floor((coords.y/8)) * 16;
-  var tile = Math.floor((coords.x) / 8 + ycoord).toString(16).toUpperCase();
-  if(tile.length < 2) {
-    tile = "0" + tile;
-  }
+  updateTextCoords();
 
-  document.getElementById("tile").innerText = "Tile $" + tile;
-  if(_isMouseDown) {
-    handleDrawTool(evt);
-  }
+  if(mouse.isDown)
+    handleToolDown();
+  else
+    handleToolUp();
   paintCanvas();
-  drawCurrentPixelSelected(coords.x, coords.y);
 });
 
-canvas.addEventListener("mousedown", down);
-canvas.addEventListener("mouseup", up);
+const coordText = document.getElementById("coord");
+const tileText = document.getElementById("tile");
 
-var _isMouseDown = false;
-function down(evt) {
-  _isMouseDown = true;
-  handleDrawTool(evt);
-}
-function up(evt) {
-  _isMouseDown = false;
+function updateTextCoords() {
+  // Pixel coordinates
+  const mx = mouse.x < 10 ? "0" + mouse.x : mouse.x;
+  const my = mouse.y < 10 ? "0" + mouse.y : mouse.y;
+  coordText.innerText = "Pixel (" + mx + ", " + my + ")";
+
+  // Tile coordinates
+  const ycoord = Math.floor(mouse.y/8) * 16;
+  let dec_tile = Math.floor(mouse.x/8 + ycoord);
+  let tile = dec_tile.toString(16).toUpperCase();
+  dec_tile = dec_tile.toString();
+  if(dec_tile.length === 1)
+    dec_tile = "00" + dec_tile;
+  else if(dec_tile.length === 2)
+    dec_tile = "0" + dec_tile;
+  if(tile.length === 1)
+    tile = "0" + tile;
+
+  tileText.innerText = dec_tile + " ($" + tile + ")";
 }
 
-function handleDrawTool(evt) {
-  var coords = getXY(evt);
-  putPixel(coords.x, coords.y, palette, selectedPalette, imageData);
-  paintCanvas();
-  updatePreview();
+canvas.addEventListener("mousedown", () => { mouse.isDown = true; handleToolDown() });
+canvas.addEventListener("mouseup", () => { mouse.isDown = false; handleToolUp(); });
+
+function handleToolDown() {
+  // Should we paint, update?
+  let upd = [0,0];
+
+  switch(tool) {
+    case "draw": handleDraw(); upd = [1,1]; break;
+    case "select": handleSelectDown(); upd = [1,0]; break;
+    default: break;
+  }
+
+  if(upd[0]) paintCanvas();
+  if(upd[1]) updatePreview();
+}
+function handleToolUp() {
+  // Should we paint, update?
+  let upd = [0,0];
+
+  switch(tool) {
+    case "draw": upd = [1,0]; break;
+    case "select": handleSelectUp(); upd = [1,0]; break;
+    default: break;
+  }
+
+  if(upd[0]) paintCanvas();
+  if(upd[1]) updatePreview();
+}
+function handleDraw() {
+  putPixel(mouse.x, mouse.y, palette, selectedPalette, imageData);
+}
+function handleSelectDown() {
+  if(selection.selecting == false) {
+    selection.start.x = mouse.x;
+    selection.start.y = mouse.y;
+    selection.exists = false;
+    selection.selecting = true;
+  }
+  selection.end.x = mouse.x;
+  selection.end.y = mouse.y;
+}
+function handleSelectUp() {
+  if(!selection.selecting) return;
+  selection.selecting = false;
+  const minX = Math.min(selection.start.x, selection.end.x);
+  const minY = Math.min(selection.start.y, selection.end.y);
+  const maxX = Math.max(selection.start.x, selection.end.x);
+  const maxY = Math.max(selection.start.y, selection.end.y);
+  if(minX !== maxX && minY !== maxY) {
+    selection.start.x = minX;
+    selection.start.y = minY;
+    selection.end.x = maxX;
+    selection.end.y = maxY;
+    selection.exists = true;
+  } else {
+    selection.start.x = -1;
+    selection.start.y = -1;
+    selection.end.x = -1;
+    selection.end.y = -1;
+    selection.exists = false;
+  }
 }
 
 // Drawing utilities
 function getCanvasImageOffset(x,y,imageData) {
-  return (x  + imageData.width * y) * 4;
+  return (x + imageData.width * y) * 4;
 }
 
 function putPixel(x, y, palette, paletteColor, imageData) {
-  var canvasImageOffset = getCanvasImageOffset(x,y,imageData);
-  var color = palette[paletteColor];
+  const canvasImageOffset = getCanvasImageOffset(x,y,imageData);
+  const color = palette[paletteColor];
   imageData.data[canvasImageOffset + 0] = color.r;
   imageData.data[canvasImageOffset + 1] = color.g;
   imageData.data[canvasImageOffset + 2] = color.b;
 }
 
 function getPixel(x, y, imageData) {
-  var canvasImageOffset = getCanvasImageOffset(x,y,imageData);
-  var color = {
+  const canvasImageOffset = getCanvasImageOffset(x,y,imageData);
+  const color = {
     r: imageData.data[canvasImageOffset + 0],
     g: imageData.data[canvasImageOffset + 1],
     b: imageData.data[canvasImageOffset + 2]
@@ -386,41 +501,7 @@ function getPixel(x, y, imageData) {
   return color;
 }
 
-function drawSpriteBorderGridLines() {
-  const sWidth = canvas.width / 16;
-  const sHeight = canvas.height / 32;
-
-  // If background palette is too bright,
-  // draw black gridlines instead of white ones
-  if(palette.background.nes == "0x20"
-  || palette.background.nes == "0x30") {
-    ctx.fillStyle = "#000";
-    ctx.strokeStyle = "#000";
-  } else {
-    ctx.fillStyle = "#fff";
-    ctx.strokeStyle = "#fff";
-  }
-  ctx.lineWidth = 2;
-  ctx.setLineDash([4, 4]);
-  ctx.lineDashOffset = 2;
-  for(let x = 0; x < 15; x++) {
-    ctx.beginPath()
-    ctx.moveTo(x * sWidth + sWidth, 0);
-    ctx.lineTo(x * sWidth + sWidth, canvas.height);
-    ctx.stroke();
-  }
-  for(let y = 0; y < 31; y++) {
-    ctx.beginPath();
-    ctx.moveTo(0, y * sHeight + sHeight)
-    ctx.lineTo(canvas.width, y * sHeight + sHeight)
-    ctx.stroke();
-  }
-}
-
-function drawCurrentPixelSelected(x, y) {
-  const pWidth = canvas.width / 128;
-  const pHeight = canvas.height / 256;
-
+function ensureContrast() {
   // If background palette is too bright,
   // draw a black box instead of a white one
   if(palette.background.nes == "0x20"
@@ -431,12 +512,76 @@ function drawCurrentPixelSelected(x, y) {
     ctx.fillStyle = "#fff";
     ctx.strokeStyle = "#fff";
   }
-  ctx.lineWidth = 2;
+}
+
+const gridOffset = 0.5;
+function drawSpriteBorderGridLines() {
+  const sWidth = canvas.width / 16;
+  const sHeight = canvas.height / 32;
+
+  ensureContrast();
+
+  ctx.lineWidth = ~~(SCALE/10) || 1;
   ctx.setLineDash([4, 4]);
   ctx.lineDashOffset = 2;
-  ctx.beginPath()
-  ctx.strokeRect(x * SCALE, y * SCALE, pWidth, pHeight);
-  ctx.stroke();
+  const scaledOffset = SCALE == 20 ? 0 : gridOffset;
+  for(let x = 0; x < 15; x++) {
+    ctx.beginPath();
+    ctx.moveTo(x * sWidth + sWidth + scaledOffset, 0);
+    ctx.lineTo(x * sWidth + sWidth + scaledOffset, canvas.height);
+    ctx.stroke();
+  }
+  for(let y = 0; y < 31; y++) {
+    ctx.beginPath();
+    ctx.moveTo(0, y * sHeight + sHeight + scaledOffset)
+    ctx.lineTo(canvas.width, y * sHeight + sHeight + scaledOffset)
+    ctx.stroke();
+  }
+}
+
+function drawCurrentPixelSelected(x, y) {
+  const pWidth = canvas.width / 128;
+  const pHeight = canvas.height / 256;
+
+  ensureContrast();
+
+  ctx.lineWidth = ~~(SCALE/10) || 1;
+  ctx.setLineDash([4, 4]);
+  ctx.lineDashOffset = 2;
+  const scaledOffset = SCALE == 20 ? 0 : gridOffset;
+  ctx.strokeRect(x * SCALE + scaledOffset, y * SCALE + scaledOffset, pWidth, pHeight);
+}
+
+function drawSelection() {
+  // If there's neither a current selection
+  // nor is the user selecting something
+  if(!selection.exists
+  && !selection.selecting)
+    // Then we don't need to draw anything
+    return;
+
+  const pWidth = canvas.width / 128;
+  const pHeight = canvas.height / 256;
+
+  // ensureContrast();
+  ctx.fillStyle = "rgba(0,0,0,0.2)";
+  ctx.strokeStyle = "#f0f";
+
+  ctx.lineWidth = ~~(SCALE/10) || 1;
+  ctx.setLineDash([0, 0]);
+  ctx.lineDashOffset = 0;
+  const scaledOffset = SCALE == 20 ? 0 : gridOffset;
+  ctx.strokeRect(
+    selection.start.x * SCALE + scaledOffset,
+    selection.start.y * SCALE + scaledOffset,
+    (selection.end.x - selection.start.x) * pWidth,
+    (selection.end.y - selection.start.y) * pHeight);
+
+  ctx.fillRect(
+    selection.start.x * SCALE + scaledOffset,
+    selection.start.y * SCALE + scaledOffset,
+    (selection.end.x - selection.start.x) * pWidth,
+    (selection.end.y - selection.start.y) * pHeight);
 }
 
 function paintCanvas(scale) {
@@ -454,7 +599,16 @@ function paintCanvas(scale) {
 
   if(showGridLines)
     drawSpriteBorderGridLines();
+
+  if(selection.start.x >= 0
+  && selection.start.y >= 0
+  && selection.end.x >= 0
+  && selection.end.y >= 0)
+    drawSelection();
+
+  drawCurrentPixelSelected(mouse.x, mouse.y);
 }
+paintCanvas(SCALE);
 
 function updatePreview() {
   resizeCanvas(WIDTH, HEIGHT);

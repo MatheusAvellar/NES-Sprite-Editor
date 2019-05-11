@@ -38,40 +38,48 @@ figure {
   text-align: center;
 }
 #editor {
-  cursor: crosshair;
-  cursor: url(pencil.png) 3 20, crosshair;
-  cursor: url(pencil.svg) 3 20, crosshair;
+  cursor: default;
   border: 1px solid #c0c0c0;
 }
+#editor.draw {
+  cursor: url(draw.png) 3 20, crosshair;
+  cursor: url(draw.svg) 3 20, crosshair;
+}
+#editor.select {
+  cursor: crosshair;
+}
 #current {
-  font-family: monospace;
   font-size: 18px;
 }
 #current::before {
   content: "Palette String: ";
-  font-family: sans-serif;
   font-size: 16px;
 }
 #info {
   padding: 10px;
 }
+#coord {
+  width: 33%;
+  display: inline-block;
+}
 #palette-current {
   text-align: center;
+  margin-bottom: 10px;
 }
 .color {
   display: inline-block;
   color: white;
   padding: 10px 15px;
+  width: 40px;
   height: 30px;
   line-height: 30px;
   border: 2px solid;
-  margin: auto auto 10px;
   text-align: center;
   vertical-align: middle;
   user-select: none;
 }
 .color[data-selected] {
-  border: 2px dashed;
+  border-style: dashed;
   line-height: 20px;
 }
 .color[data-selected]::after {
@@ -128,6 +136,11 @@ button:active {
   box-shadow: 0px 0px 0px #465298;
   background-color: #7986d2;
 }
+button[disabled] {
+  transform: translateY(2px);
+  box-shadow: 0px 0px 0px #465298;
+  background-color: #9ea2bb;
+}
 [type="checkbox"] {
   border-radius: 2px;
   border: 2px solid #465298;
@@ -158,4 +171,9 @@ button:active {
 }
 [type="text"]:focus {
   border: 1px solid #465298;
+}
+
+.pick-tool {
+  max-width: 100px;
+  max-height: 100px;
 }
